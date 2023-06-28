@@ -81,14 +81,14 @@ namespace test3.Services
                         processedCount++;
                         if (processedCount > totalFilesToProcess) processedCount = totalFilesToProcess;
 
-                        ConsoleManager.DisplayPreProcessBasic(camera, totalFilesToProcess, processedCount);
+                        OutputManager.DisplayPreProcessBasic(camera, totalFilesToProcess, processedCount);
                     }
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
                 else
                 {
                     cameraDayData.VideoFragments = metadata.ToList();
-                    ConsoleManager.DisplayPreProcessBasicSkip(camera);
+                    OutputManager.DisplayPreProcessBasicSkip(camera);
                 }
 
 
@@ -122,16 +122,16 @@ namespace test3.Services
                             }
                         }
 
-                        ConsoleManager.DisplayPreProcessValidation(camera, totalFilesToProcess, processedCount + corruptedCount, corruptedCount);
+                        OutputManager.DisplayPreProcessValidation(camera, totalFilesToProcess, processedCount + corruptedCount, corruptedCount);
                     }
 
                     _dataManager.UpdateMetadata(dayLocation, camera, cameraDayData.VideoFragments);
 
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
                 else
                 {
-                    ConsoleManager.DisplayPreProcessValidationSkip(camera, cameraDayData.VideoFragments.Count(x => x.IsValid()), cameraDayData.VideoFragments.Count(x => !x.IsValid()));
+                    OutputManager.DisplayPreProcessValidationSkip(camera, cameraDayData.VideoFragments.Count(x => x.IsValid()), cameraDayData.VideoFragments.Count(x => !x.IsValid()));
                 }
 
                 result.CameraDayData.Add(cameraDayData);
@@ -243,7 +243,7 @@ namespace test3.Services
             var errors = new Dictionary<string, string>()
             {
                 {"error reading header", "header"},
-                //{"Invalid NAL unit size", "nal_size"},
+                {"Invalid NAL unit size", "nal_size"},
             };
 
             if (errLine.Data != null)
@@ -253,16 +253,16 @@ namespace test3.Services
                     if (errLine.Data.Contains(errors.First().Key))
                     {
                         reason = errors.First().Value;
+
+                        isNotValid = true;
+                        frames = 0;
+                        duration = TimeSpan.MinValue;
                     }
 
                     if (errLine.Data.Contains(errors.Skip(1).First().Key))
                     {
                         reason = errors.Skip(1).First().Value;
                     }
-
-                    isNotValid = true;
-                    frames = 0;
-                    duration = TimeSpan.MinValue;
                 }
                 else
                 {

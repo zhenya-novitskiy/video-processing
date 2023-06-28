@@ -24,6 +24,7 @@ namespace test3
         {
             HostFactory.Run(x =>
             {
+              
                 x.Service<ApplicationHost<Startup>>(s =>
                 {
                     s.ConstructUsing(name => new ApplicationHost<Startup>());

@@ -57,11 +57,11 @@ namespace test3.Services
         public void Group(string filePath1, string filePath2, string filePath3, string output)
         {
             var metadata = new MediaInfoWrapper(filePath1);
-            ConsoleManager.AddText($"Duration 1 {metadata.Duration} {filePath1}", false);
+            OutputManager.AddText($"Duration 1 {metadata.Duration} {filePath1}", false);
             metadata = new MediaInfoWrapper(filePath2);
-            ConsoleManager.AddText($"Duration 2 {metadata.Duration} {filePath2}", false);
+            OutputManager.AddText($"Duration 2 {metadata.Duration} {filePath2}", false);
             metadata = new MediaInfoWrapper(filePath3);
-            ConsoleManager.AddText($"Duration 3 {metadata.Duration} {filePath3}", false);
+            OutputManager.AddText($"Duration 3 {metadata.Duration} {filePath3}", false);
 
             var args = $"-y -i {filePath1} -i {filePath2} -i {filePath3}  -filter_complex \"[0:v]setpts=0.1 * PTS,  scale=960:540[a0]; [1:v] setpts=0.1 * PTS, scale=960:540[a1]; [2:v]setpts=0.1 * PTS,  scale=960:540[a2]; [a0][a1][a2] xstack=inputs=3:layout=0_0|0_h0|w0_h0:fill=black[v]\" -map \"[v]\" -an -preset ultrafast {output}";
             var pci = new ProcessStartInfo(Path.Combine(_ffmpegPath, "ffmpeg.exe"), args)
@@ -90,7 +90,7 @@ namespace test3.Services
 
             if (_displayProgress)
             {
-                ConsoleManager.NextLine();
+                OutputManager.NextLine();
             }
 
             File.Delete(filePath1);
@@ -101,9 +101,9 @@ namespace test3.Services
         public void Group(string filePath1, string filePath2, string output)
         {
             var metadata = new MediaInfoWrapper(filePath1);
-            ConsoleManager.AddText($"Duration 1 {metadata.Duration} {filePath1}", false);
+            OutputManager.AddText($"Duration 1 {metadata.Duration} {filePath1}", false);
             metadata = new MediaInfoWrapper(filePath2);
-            ConsoleManager.AddText($"Duration 2 {metadata.Duration} {filePath2}", false);
+            OutputManager.AddText($"Duration 2 {metadata.Duration} {filePath2}", false);
 
             var args = $"-y -i {filePath1} -i {filePath2}   -filter_complex \"[0:v]setpts=0.1 * PTS,  scale=960:540[a0]; [1:v] setpts=0.1 * PTS, scale=960:540[a1]; [a0][a1] vstack=inputs=2\"  -an -preset ultrafast {output}";
             var pci = new ProcessStartInfo(Path.Combine(_ffmpegPath, "ffmpeg.exe"), args)
@@ -132,7 +132,7 @@ namespace test3.Services
 
             if (_displayProgress)
             {
-                ConsoleManager.NextLine();
+                OutputManager.NextLine();
             }
 
             File.Delete(filePath1);
@@ -157,7 +157,7 @@ namespace test3.Services
 
                         if (_displayProgress)
                         {
-                            ConsoleManager.DisplayJoinFile(_cameraName, totalFilesToJoin, currentProgress);
+                            OutputManager.DisplayJoinFile(_cameraName, totalFilesToJoin, currentProgress);
                         }
                     }
                 }

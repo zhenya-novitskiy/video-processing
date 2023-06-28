@@ -37,7 +37,7 @@ namespace test3.Services
 
                 if (camera.VideoFragments.Where(x=>x.IsValid() && x.Type != VideoFragmentType.Black).All(x=>x.IsFpsAligned))
                 {
-                    ConsoleManager.DisplayChangeFPSSkip(camera.Name);
+                    OutputManager.DisplayChangeFPSSkip(camera.Name);
                 }
                 else
                 {
@@ -61,14 +61,14 @@ namespace test3.Services
 
                         _filesProcessed++;
 
-                        ConsoleManager.DisplayChangeFPS(camera.Name, _totalFilesToProcess, _filesProcessed, currentFps);
+                        OutputManager.DisplayChangeFPS(camera.Name, _totalFilesToProcess, _filesProcessed, currentFps);
 
                         _dataManager.UpdateMetadata(day.FilesPath, camera.Name, camera.VideoFragments);
                     }
 
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
 
-                    ConsoleManager.DisplayAdditionalInfo(camera.Name, $"Motion time: {camera.VideoFragments.ValidCameraVideos().Duration().ToString(@"hh\:mm\:ss")}");
+                    OutputManager.DisplayAdditionalInfo(camera.Name, $"Motion time: {camera.VideoFragments.ValidCameraVideos().Duration().ToString(@"hh\:mm\:ss")}");
 
                     var result = new TimePeriodIntersector<TimeRange>().IntersectPeriods(new TimePeriodCollection(camera.VideoFragments.ValidCameraVideos())).ToList();
                 }

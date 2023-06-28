@@ -26,7 +26,7 @@ namespace test3.Services
                 }
                 catch (Exception e)
                 {
-                    ConsoleManager.AddText(e.Message, false);
+                    OutputManager.AddText(e.Message, false);
                     //throw;
                 }
                 

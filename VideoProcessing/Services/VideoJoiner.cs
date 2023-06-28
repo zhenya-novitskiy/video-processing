@@ -44,11 +44,11 @@ namespace test3.Services
                         .ToList();
 
                     Join(files, resultFilePath);
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
                 else
                 {
-                    ConsoleManager.DisplayJoinFileSkip(_cameraName);
+                    OutputManager.DisplayJoinFileSkip(_cameraName);
                 }
 
                
@@ -109,7 +109,7 @@ namespace test3.Services
 
                     if (_displayProgress)
                     {
-                        ConsoleManager.DisplayJoinFile(_cameraName, totalFilesToJoin, currentProgress);
+                        OutputManager.DisplayJoinFile(_cameraName, totalFilesToJoin, currentProgress);
                     }
                 }
 

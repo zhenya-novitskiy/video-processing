@@ -88,18 +88,18 @@ namespace VideoProcessing.Controllers
                 Process();
             });
 
-            return new ContentResult(){Content = "Job started" , ContentType = "text/plain", StatusCode = (int)HttpStatusCode.OK};
+            return new RedirectResult("log");//{Content = "Job started" , ContentType = "text/plain", StatusCode = (int)HttpStatusCode.OK};
         }
 
         
 
         [HttpGet]
-        [Route("lastlog")]
-        public async Task<IActionResult> LastLog()
+        [Route("log")]
+        public async Task<IActionResult> LastLog(int index)
         {
             var dir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs"));
 
-            var lastLogFile = dir.GetFiles().OrderBy(x => x.Name).Last();
+            var lastLogFile = dir.GetFiles().OrderByDescending(x => x.Name).ToList().Skip(index).First();
 
             var fileData = System.IO.File.ReadAllLines(lastLogFile.FullName).ToList();
 
@@ -109,10 +109,30 @@ namespace VideoProcessing.Controllers
         }
 
 
+        [HttpGet]
+        [Route("log/list")]
+        public async Task<IActionResult> LastLogList()
+        {
+            var dir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs"));
+
+            var logs = dir.GetFiles().OrderByDescending(x => x.Name);
+
+            var content = string.Empty;
+
+            foreach (var logsName in logs)
+            {
+                content += $"{logsName.Name} \t {logsName.Length} \n";
+            }
+
+            return new ContentResult() { Content = content, ContentType = "text/plain", StatusCode = (int)HttpStatusCode.OK };
+        }
+
+
         private void Process()
         {
-        
-            ConsoleManager.SetSessionName(DateTime.Now.ToString("MM_dd_yyyy_HH_mm"));
+            //Console.SetWindowSize(Console.LargestWindowWidth, Console.LargestWindowHeight);
+
+            OutputManager.SetSessionName(DateTime.Now.ToString("MM_dd_yyyy_HH_mm"));
 
             var today = DateTime.Now;
 
@@ -147,14 +167,13 @@ namespace VideoProcessing.Controllers
 
             daysToProcess.Reverse();
 
-
             foreach (var day in daysToProcess)
             {
                 try
                 {
                     var stringDay = day.ToString("yyyy_MM_dd");
 
-                    ConsoleManager.AddText($"{stringDay} Starting rendering ---------------------------------------------------------------------------------------------", false);
+                    OutputManager.AddText($"{stringDay} Starting rendering ---------------------------------------------------------------------------------------------", false);
 
                     var str = day.ToString("yyyy_MM_dd").Split("_");
 
@@ -162,45 +181,45 @@ namespace VideoProcessing.Controllers
 
                     artifactsLocation.CheckDirectory();
 
-                    ConsoleManager.SetDay(stringDay);
+                    OutputManager.SetDay(stringDay);
 
                     var data = new VideoPreprocessor().PreprocessDay(day, Program.Configuration.Cameras);
 
-                    ConsoleManager.AddText($"{stringDay} Finished Preprocess", false);
+                    OutputManager.AddText($"{stringDay} Finished Preprocess", false);
 
                     var test = new FileDataParser();
 
                     data = test.CreateVideoScreens(data);
 
-                    ConsoleManager.AddText($"{stringDay} Finished CreateVideoScreens", false);
+                    OutputManager.AddText($"{stringDay} Finished CreateVideoScreens", false);
 
                     data = test.UpdateDatesData(data);
 
-                    ConsoleManager.AddText($"{stringDay} Finished UpdateDatesData", false);
+                    OutputManager.AddText($"{stringDay} Finished UpdateDatesData", false);
 
                     new VideoFpsAligner().AlignFps(data);
 
-                    ConsoleManager.AddText($"{stringDay} Finished AlignFps", false);
+                    OutputManager.AddText($"{stringDay} Finished AlignFps", false);
 
                     data = new VideoDummyDataGenerator().GenerateMissedBlackParts(data);
 
                     data = new VideoJoiner().Join(data);
 
-                    ConsoleManager.AddText($"{stringDay} Finished Join", false);
+                    OutputManager.AddText($"{stringDay} Finished Join", false);
 
                     data = new VideoGrouper().Group(data);
 
-                    ConsoleManager.AddText($"{stringDay} Finish rendering ---------------------------------------------------------------------------------------------", false);
+                    OutputManager.AddText($"{stringDay} Finish rendering ---------------------------------------------------------------------------------------------", false);
 
-                    ConsoleManager.AddText($"{stringDay} Start Uploading ---------------------------------------------------------------------------------------------", false);
+                    OutputManager.AddText($"{stringDay} Start Uploading ---------------------------------------------------------------------------------------------", false);
                     
                     ftpManager.SyncFiles();
                     
-                    ConsoleManager.AddText($"{stringDay} Finish Uploading ---------------------------------------------------------------------------------------------", false);
+                    OutputManager.AddText($"{stringDay} Finish Uploading ---------------------------------------------------------------------------------------------", false);
                 }
                 catch (Exception e)
                 {
-                    ConsoleManager.AddText($"Failed to render day {day.ToString("yyyy_MM_dd")}: {e.Message} ---------------------------------------------------------------------------------------------" , false);
+                    OutputManager.AddText($"Failed to render day {day.ToString("yyyy_MM_dd")}: {e.Message} ---------------------------------------------------------------------------------------------" , false);
                 }
             }
 

@@ -47,7 +47,7 @@
 
 //                if (_filesProcessed == _totalFilesToProcess)
 //                {
-//                    ConsoleManager.DisplayCreatingScreenshotsSkip(camera.Name);
+//                    OutputManager.DisplayCreatingScreenshotsSkip(camera.Name);
 //                }
 //                else
 //                {
@@ -55,9 +55,9 @@
 //                    {
 //                        CreateVideoScreen(videoFragment.FilePath);
 //                        _filesProcessed++;
-//                        ConsoleManager.DisplayCreatingScreenshots(camera.Name, _totalFilesToProcess, _filesProcessed);
+//                        OutputManager.DisplayCreatingScreenshots(camera.Name, _totalFilesToProcess, _filesProcessed);
 //                    }
-//                    ConsoleManager.NextLine();
+//                    OutputManager.NextLine();
 //                }
 
 
@@ -82,7 +82,7 @@
 
 //                if (camera.VideoFragments.Where(x => x.IsValid()).All(x => x.Start != DateTime.MinValue))
 //                {
-//                    ConsoleManager.DisplayDateRecognitionSkip(camera.Name, camera.VideoFragments.Count(x => x.IsValid()), _filesCorrupted);
+//                    OutputManager.DisplayDateRecognitionSkip(camera.Name, camera.VideoFragments.Count(x => x.IsValid()), _filesCorrupted);
 //                }
 //                else
 //                {
@@ -108,9 +108,9 @@
 
 //                        _dataManager.UpdateMetadata(day.FilesPath, camera.Name, camera.VideoFragments);
 
-//                        ConsoleManager.DisplayDateRecognition(camera.Name, _totalFilesToProcess, _filesProcessed, _filesCorrupted);
+//                        OutputManager.DisplayDateRecognition(camera.Name, _totalFilesToProcess, _filesProcessed, _filesCorrupted);
 //                    }
-//                    ConsoleManager.NextLine();
+//                    OutputManager.NextLine();
 //                }
 //            }
 

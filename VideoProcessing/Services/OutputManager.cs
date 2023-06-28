@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace test3.Services
 {
-    public static class ConsoleManager
+    public static class OutputManager
     {
         public static string CurrentLogFilePath;
         public static string DayName;
@@ -64,9 +64,9 @@ namespace test3.Services
             AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Date Recognition\t\t | Processed: 100%\t| Recognized: {valid}\t| Broken: {corrupted}\t|", false);
         }
 
-        public static void DisplayDateRecognition(string cameraName, int total, int processed, int corrupted)
+        public static void DisplayDateRecognition(string cameraName, int total, int processed, int corrupted, int high, int mid, int low, int fromFile)
         {
-            AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Date Recognition\t\t | Processed: {(int)(processed / (total / 100.0))}%\t| Recognized: {processed - corrupted}\t| Broken: {corrupted}\t|");
+            AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Date Recognition\t\t | Processed: {(int)(processed / (total / 100.0))}%\t| Recognized: {processed - corrupted}\t| Broken: {corrupted} | High: {high} | Mid: {mid} | Low: {low} | FromFile: {fromFile} |");
         }
 
         public static void DisplayCreatingScreenshotsSkip(string cameraName)
@@ -74,9 +74,9 @@ namespace test3.Services
             AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Creating Screenshots\t\t | Processed: 100%\t|", false);
         }
 
-        public static void DisplayCreatingScreenshots(string cameraName, int total, int processed)
+        public static void DisplayCreatingScreenshots(string cameraName, int total, int processed, int failedToCreate)
         {
-            AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Creating Screenshots\t\t | Processed: {(int)(processed / (total / 100.0))}%\t|");
+            AddText($"| {Program.CurrentJobTimer.Elapsed.ToString(@"hh\:mm\:ss")} | {cameraName}\t| Creating Screenshots\t\t | Processed: {(int)(processed / (total / 100.0))}%\t| Failed: {failedToCreate}");
         }
 
         public static void DisplayRenderBlackFragmentsSkip(string cameraName)

@@ -10,6 +10,7 @@ using Emgu.CV.OCR;
 using Emgu.CV.Structure;
 using test3.Extensions;
 using test3.Models;
+using VideoProcessing.Models;
 
 namespace test3.Services
 {
@@ -21,6 +22,11 @@ namespace test3.Services
         private int _totalFilesToProcess;
         private int _filesProcessed;
         private int _filesCorrupted;
+        private int _highRecognitions = 0;
+        private int _midRecognitions = 0;
+        private int _lowRecognitions = 0;
+        private int _fromFileRecognitions = 0;
+
         private DataManager _dataManager;
 
         public FileDataParser()
@@ -47,19 +53,26 @@ namespace test3.Services
                 _totalFilesToProcess = camera.VideoFragments.Count(x => x.IsValid() && x.Type != VideoFragmentType.Black);
                 _filesProcessed = screens.Count;
 
+                int failedToCreate = 0;
+
                 if (_filesProcessed == _totalFilesToProcess)
                 {
-                    ConsoleManager.DisplayCreatingScreenshotsSkip(camera.Name);
+                    OutputManager.DisplayCreatingScreenshotsSkip(camera.Name);
                 }
                 else
                 {
                     foreach (var videoFragment in camera.VideoFragments.Where(x => x.IsValid() && !screens.Contains(x.FileName.Replace(".mp4", ".png"))))
                     {
-                        CreateVideoScreen(videoFragment.FilePath);
+                        var screenUrl = CreateVideoScreen(videoFragment.FilePath);
+                        if (!File.Exists(screenUrl))
+                        {
+                            failedToCreate++;
+                        }
+
                         _filesProcessed++;
-                        ConsoleManager.DisplayCreatingScreenshots(camera.Name, _totalFilesToProcess, _filesProcessed);
+                        OutputManager.DisplayCreatingScreenshots(camera.Name, _totalFilesToProcess, _filesProcessed, failedToCreate);
                     }
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
 
                 
@@ -84,9 +97,14 @@ namespace test3.Services
                 _filesProcessed = 0;
                 _filesCorrupted = 0;
 
+                _highRecognitions = 0;
+                _midRecognitions = 0;
+                _lowRecognitions = 0;
+                _fromFileRecognitions = 0;
+
                 if (camera.VideoFragments.Where(x => x.IsValid()).All(x => x.Start != DateTime.MinValue))
                 {
-                    ConsoleManager.DisplayDateRecognitionSkip(camera.Name, camera.VideoFragments.Count(x => x.IsValid()), _filesCorrupted);
+                    OutputManager.DisplayDateRecognitionSkip(camera.Name, camera.VideoFragments.Count(x => x.IsValid()), _filesCorrupted);
                 }
                 else
                 {
@@ -112,9 +130,27 @@ namespace test3.Services
 
                         _dataManager.UpdateMetadata(day.FilesPath, camera.Name, camera.VideoFragments);
 
-                        ConsoleManager.DisplayDateRecognition(camera.Name, _totalFilesToProcess, _filesProcessed, _filesCorrupted);
+                        switch (result.Accuracy)
+                        {
+                            case Accuracy.High:
+                                _highRecognitions++;
+                                break;
+                            case Accuracy.Mid:
+                                _midRecognitions++;
+                                break;
+                            case Accuracy.Low:
+                                _lowRecognitions++;
+                                break;
+                            case Accuracy.FromFile:
+                                _fromFileRecognitions++;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+
+                        OutputManager.DisplayDateRecognition(camera.Name, _totalFilesToProcess, _filesProcessed, _filesCorrupted, _highRecognitions, _midRecognitions, _lowRecognitions, _fromFileRecognitions);
                     }
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
             }
 
@@ -185,25 +221,15 @@ namespace test3.Services
 
                 var original = raw.Convert<Gray, byte>();
 
-                
-
-                
-
-
                 var copy = raw.Copy();
 
                 raw.Dispose();
-
-                
 
                 original.ROI = new Rectangle(values[0], values[10], values[1], values[8]);
 
                 var digits = original.Copy();
 
                 var binDigits = new Image<Gray, byte>(digits.Width, digits.Height, new Gray(0));
-
-
-                
 
                 CvInvoke.Threshold(digits, binDigits, 200, 255, ThresholdType.Binary);
                 CvInvoke.BitwiseNot(binDigits, binDigits);
@@ -264,18 +290,21 @@ namespace test3.Services
                 try
                 {
 
-                    var date = ExtractDate(currentDate, text, fileName, width, copy, root);
+                    var result = ExtractDate(currentDate, text, fileName, width, copy, root);
+
+                    isParsed = true;
 
                     return new DateResult()
                     {
                         FileName = filePath,
-                        Time = date,
+                        Time = result.DateTime,
+                        Accuracy = result.Accuracy
                     };
-                    isParsed = true;
+                    
                 }
                 catch (Exception e)
                 {
-
+                    
                 }
 
                 if (!isParsed)
@@ -316,64 +345,127 @@ namespace test3.Services
             return null;
         }
 
-        private DateTime ExtractDate(DateTime currentDate, string recognizedText, string fileName, int width, Image<Bgr, Byte> image, string root)
+        private RecognitionResult ExtractDate(DateTime currentDate, string recognizedText, string fileName, int width, Image<Bgr, Byte> image, string root)
         {
+            int? rHours = null;
+            int? rMinutes = null;
+            int? rSeconds = null;
 
-            var rHours = int.Parse(recognizedText.Substring(0, 2));
-            var rMinutes = int.Parse(recognizedText.Substring(3, 2));
-            var rSeconds = int.Parse(recognizedText.Substring(6, 2));
+            Accuracy accuracy = Accuracy.High;
 
+            var parts = recognizedText.Split(':');
 
-            var ggg = fileName.Replace(".mp4", string.Empty);
-            var fHours = int.Parse(ggg.Substring(ggg.Length - 6, 2));
-            var fMinutes = int.Parse(ggg.Substring(ggg.Length - 4, 2));
-            var fSeconds = int.Parse(ggg.Substring(ggg.Length - 2, 2));
+            if (parts.Length >= 1)
+            {
+                rHours = TryParseNullable(parts[0]);
+            }
 
-            double diff = (new TimeSpan(rHours, rMinutes, rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
+            if (parts.Length >= 2)
+            {
+                rMinutes = TryParseNullable(parts[1]);
+            }
+
+            if (parts.Length >= 3)
+            {
+                rSeconds = TryParseNullable(parts[2]);
+            }
+
+            var filePathName = fileName.Replace(".mp4", string.Empty);
+            var fHours = int.Parse(filePathName.Substring(filePathName.Length - 6, 2));
+            var fMinutes = int.Parse(filePathName.Substring(filePathName.Length - 4, 2));
+            var fSeconds = int.Parse(filePathName.Substring(filePathName.Length - 2, 2));
+
+            if (rHours == null)
+            {
+                rHours = fHours;
+                accuracy = Accuracy.FromFile;
+            }
+
+            if (rMinutes == null)
+            {
+                rMinutes = fMinutes;
+                accuracy = Accuracy.FromFile;
+            }
+
+            if (rSeconds == null)
+            {
+                rSeconds = fSeconds;
+                accuracy = Accuracy.FromFile;
+            }
+
+            double diff = (new TimeSpan((int)rHours, (int)rMinutes, (int)rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
             if (diff < 0) diff = -diff;
 
             if (diff < 10)
             {
-                return new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, rHours, rMinutes, rSeconds);
+                return new RecognitionResult
+                {
+                    Accuracy = accuracy != Accuracy.FromFile ? Accuracy.High : Accuracy.FromFile,
+                    DateTime = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, (int)rHours, (int)rMinutes, (int)rSeconds)
+                };
             }
 
             PrintTextToImage(353, width, $"1 {diff}", image, new Bgr(Color.Red), root, fileName);
 
             rHours = fHours;
+            accuracy = Accuracy.Mid;
 
-            diff = (new TimeSpan(rHours, rMinutes, rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
+            diff = (new TimeSpan((int)rHours, (int)rMinutes, (int)rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
             if (diff < 0) diff = -diff;
             
             if (diff < 10)
             {
-                return new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, rHours, rMinutes, rSeconds);
+                return new RecognitionResult
+                {
+                    Accuracy = accuracy,
+                    DateTime = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, (int)rHours, (int)rMinutes, (int)rSeconds)
+                };
             }
 
             PrintTextToImage(453, width, $"2 {diff}", image, new Bgr(Color.Red), root, fileName);
 
             rMinutes = fMinutes;
+            accuracy = Accuracy.Low;
 
-            diff = (new TimeSpan(rHours, rMinutes, rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
+            diff = (new TimeSpan((int)rHours, (int)rMinutes, (int)rSeconds) - new TimeSpan(fHours, fMinutes, fSeconds)).TotalSeconds;
             if (diff < 0) diff = -diff;
 
             if (diff < 10)
             {
-                return new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, rHours, rMinutes, rSeconds);
+                return new RecognitionResult
+                {
+                    Accuracy = accuracy,
+                    DateTime = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, (int)rHours, (int)rMinutes, (int)rSeconds)
+                };
             }
+
+            accuracy = Accuracy.FromFile;
 
             PrintTextToImage(153, width, $"{recognizedText}", image, new Bgr(Color.Red), root, fileName);
 
             PrintTextToImage(453, width, $"3 {diff}", image, new Bgr(Color.Red), root, fileName);
 
-            return new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, fHours, fMinutes, fSeconds);
+            return new RecognitionResult
+            {
+                Accuracy = accuracy,
+                DateTime = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, (int)rHours, (int)rMinutes, (int)rSeconds)
+            };
         }
 
-        private void CreateVideoScreen(string filePath)
+        private int? TryParseNullable(string val)
+        {
+            int outValue;
+            return int.TryParse(val, out outValue) ? (int?)outValue : null;
+        }
+
+        private string CreateVideoScreen(string filePath)
         {
             var root = Path.GetDirectoryName(filePath);
             var fileName = Path.GetFileName(filePath);
 
-            var args = $"-i {filePath} -y -vf" + " \"select = eq(n\\, 0)\"" + $" -q:v 1 -qmin 1 -vsync 0 -dpi 400 {Path.Combine(root, "artifacts", "screens", fileName.Replace(".mp4", ".png"))}";
+            var screenUrl = Path.Combine(root, "artifacts", "screens", fileName.Replace(".mp4", ".png"));
+
+            var args = $"-i {filePath} -y -vf" + " \"select = eq(n\\, 0)\"" + $" -q:v 1 -qmin 1 -vsync 0 -dpi 400 {screenUrl}";
 
             var pci = new ProcessStartInfo(Path.Combine(_ffmpegPath, "ffmpeg.exe"), args)
             {
@@ -397,6 +489,8 @@ namespace test3.Services
             fileValidationProcess.ErrorDataReceived -= new DataReceivedEventHandler(NetErrorDataHandler);
 
             fileValidationProcess.Close();
+
+            return screenUrl;
         }
 
         void NetErrorDataHandler(object sendingProcess, DataReceivedEventArgs errLine)
@@ -465,6 +559,8 @@ namespace test3.Services
     {
         public string FileName { get; set; }
         public DateTime Time { get; set; }
+
+        public Accuracy Accuracy { get; set; }
 
         public string Error { get; set; }
     }

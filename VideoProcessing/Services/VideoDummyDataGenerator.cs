@@ -34,8 +34,8 @@ namespace test3.Services
 
             try
             {
-                ConsoleManager.DisplayAdditionalInfo("All", $"Limits time: {limits.Duration.ToString(@"hh\:mm\:ss")}");
-                ConsoleManager.DisplayAdditionalInfo("All", $"Group no motion: {TimeSpan.FromSeconds(groupNoMotionPeriods.Sum(x => x.Duration.TotalSeconds)).ToString(@"hh\:mm\:ss")}");
+                OutputManager.DisplayAdditionalInfo("All", $"Limits time: {limits.Duration.ToString(@"hh\:mm\:ss")}");
+                OutputManager.DisplayAdditionalInfo("All", $"Group no motion: {TimeSpan.FromSeconds(groupNoMotionPeriods.Sum(x => x.Duration.TotalSeconds)).ToString(@"hh\:mm\:ss")}");
             }
             catch (Exception e)
             {
@@ -62,7 +62,7 @@ namespace test3.Services
 
                     
 
-                    ConsoleManager.DisplayAdditionalInfo(camera.Name, $"No motion time: {TimeSpan.FromMinutes(cameraNoMotionPeriods.Sum(x => x.Duration.TotalMinutes)).ToString(@"hh\:mm\:ss")}");
+                    OutputManager.DisplayAdditionalInfo(camera.Name, $"No motion time: {TimeSpan.FromMinutes(cameraNoMotionPeriods.Sum(x => x.Duration.TotalMinutes)).ToString(@"hh\:mm\:ss")}");
 
                     var dummyRanges = new TimePeriodSubtractor<TimeRange>().SubtractPeriods(cameraNoMotionPeriods, new TimePeriodCollection(groupNoMotionPeriods));
 
@@ -80,10 +80,10 @@ namespace test3.Services
                 }
                 else
                 {
-                    ConsoleManager.DisplayRenderBlackFragmentsSkip(camera.Name);
+                    OutputManager.DisplayRenderBlackFragmentsSkip(camera.Name);
                 }
 
-                ConsoleManager.DisplayAdditionalInfo(camera.Name, $"Total planned: {camera.VideoFragments.AllValidVideos().Duration().ToString(@"hh\:mm\:ss")}");
+                OutputManager.DisplayAdditionalInfo(camera.Name, $"Total planned: {camera.VideoFragments.AllValidVideos().Duration().ToString(@"hh\:mm\:ss")}");
             }
 
             return day;
@@ -107,7 +107,7 @@ namespace test3.Services
                     source[i].FileName = Path.GetFileName(prevFileName);
                     _filesProcessed++;
 
-                    ConsoleManager.DisplayRenderBlackFragments(cameraName, _totalFilesToProcess, _filesProcessed);
+                    OutputManager.DisplayRenderBlackFragments(cameraName, _totalFilesToProcess, _filesProcessed);
                     _dataManager.UpdateMetadata(day, cameraName, source);
                 }
 
@@ -116,7 +116,7 @@ namespace test3.Services
                     prevFileName = source[i].FileName;
                 }
             }
-            ConsoleManager.NextLine();
+            OutputManager.NextLine();
 
             return source;
         }

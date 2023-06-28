@@ -126,7 +126,7 @@ namespace test3.Services
                     _timer.Stop();
                     Console.SetCursorPosition(0, Console.CursorTop);
                     Console.Write($"| {currentDayName}\t| {currentCameraName}\t| Download\t| Progress 100 %                    \t|");
-                    ConsoleManager.NextLine();
+                    OutputManager.NextLine();
                 }
             }
         }
